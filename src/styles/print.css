@@ -1,0 +1,37 @@
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Prevent page breaks inside cards/tables */
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+
+  /* Remove shadows in print */
+  * {
+    box-shadow: none !important;
+  }
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#0ea5e9" />
+    <meta name="description" content="Jai Mata Di Auto Care - Authorized Ampere EV Dealership in Loni Kh. Shop electric vehicles, genuine parts, and book service." />
+    
+    <!-- PWA primary -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <title>Jai Mata Di Auto Care | Ampere EV Dealership</title>
+
+    <style>
+      /* Initial Loading Screen Styles */
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #ffffff;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+      .dark #app-loader {
+        background-color: #0f172a;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #0ea5e9;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+
+    <script>
+      // Apply theme before render to prevent flash
+      const theme = localStorage.getItem('jmd-theme-storage');
+      if (theme) {
+        const parsed = JSON.parse(theme);
+        const mode = parsed.state.theme;
+        if (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
+        <h1>JavaScript Required</h1>
+        <p>We're sorry, but Jai Mata Di Auto Care requires JavaScript to function properly. Please enable it in your browser settings.</p>
+      </div>
+    </noscript>
+
+    <div id="root">
+      <!-- Pre-loader removed by React after mount -->
+      <div id="app-loader">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- Main Entry -->
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Modal Root for React Portals -->
+    <div id="modal-root"></div>
+  </body>
+</html>

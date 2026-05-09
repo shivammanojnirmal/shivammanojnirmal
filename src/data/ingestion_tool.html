@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jai Mata Di Auto - Parts Ingestion Engine</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .container { background: #1e293b; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; max-width: 600px; }
+    h1 { margin-top: 0; font-size: 1.5rem; color: #38bdf8; }
+    p { color: #94a3b8; line-height: 1.5; }
+    input[type="file"] { margin: 1.5rem 0; padding: 1rem; border: 2px dashed #475569; border-radius: 6px; cursor: pointer; width: 100%; box-sizing: border-box; background: #0f172a; color: #f8fafc; }
+    .status { margin-top: 1rem; font-family: monospace; color: #10b981; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Grand Master Ingestion Engine</h1>
+    <p>Select the <code>ALL VEHICLES PRICE LIST Retail - Main - CSV.csv</code> file. The engine will instantly process all 1,500+ records, bypass malformed rows, and download your complete <code>parts.js</code> file.</p>
+    <input type="file" id="csvFile" accept=".csv">
+    <div id="status" class="status"></div>
+  </div>
+
+  <script>
+    function inferCategory(partName) {
+      if (!partName) return 'General';
+      const name = partName.toUpperCase();
+
+      if (name.includes('LAMP') || name.includes('LIGHT') || name.includes('INDICATOR') || name.includes('REFLECTOR') || name.includes('DRL') || name.includes('BULB')) return 'Lighting';
+      if (name.includes('BRAKE') || name.includes('DISC') || name.includes('CALIPER') || name.includes('SHOE') || name.includes('EQUALIZER')) return 'Braking';
+      if (name.includes('TYRE') || name.includes('RIM') || name.includes('WHEEL') || name.includes('VALVE') || name.includes('TUBE')) return 'Tyres & Wheels';
+      if (name.includes('BATTERY') || name.includes('CHARGER') || name.includes('CONTROLLER') || name.includes('HARNESS') || name.includes('SWITCH') || name.includes('SENSOR') || name.includes('VCU') || name.includes('MCU') || name.includes('CONVERTOR') || name.includes('CLUSTER')) return 'Electrical';
+      if (name.includes('MOTOR') || name.includes('STATOR') || name.includes('ROTOR')) return 'Motor';
+      if (name.includes('PANEL') || name.includes('FENDER') || name.includes('STAND') || name.includes('BOARD') || name.includes('COVER') || name.includes('SEAT') || name.includes('MIRROR') || name.includes('BOX') || name.includes('SKIRT') || name.includes('GRAB') || name.includes('MUDGUARD')) return 'Body';
+      if (name.includes('FORK') || name.includes('SHOCK') || name.includes('ARM') || name.includes('SUSPENSION') || name.includes('AXLE') || name.includes('FRAME') || name.includes('CHASSIS')) return 'Frame & Suspension';
+      if (name.includes('BOLT') || name.includes('NUT') || name.includes('SCREW') || name.includes('WASHER') || name.includes('PIN') || name.includes('CLIP') || name.includes('TIE') || name.includes('CLAMP')) return 'Hardware';
+      if (name.includes('KIT') || name.includes('MANUAL') || name.includes('LOCK') || name.includes('TOOL') || name.includes('DECAL') || name.includes('STICKER')) return 'Accessories';
+
+      return 'General';
+    }
+
+    function parseCSV(text) {
+      const result = [];
+      let row = [];
+      let inQuotes = false;
+      let value = '';
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (inQuotes) {
+          if (char === '"') {
+            if (text[i + 1] === '"') { value += '"'; i++; }
+            else { inQuotes = false; }
+          } else { value += char; }
+        } else {
+          if (char === '"') { inQuotes = true; }
+          else if (char === ',') { row.push(value.trim()); value = ''; }
+          else if (char === '\n' || char === '\r') {
+            row.push(value.trim()); value = '';
+            if (row.length > 1 || row[0] !== '') result.push(row);
+            row = [];
+            if (char === '\r' && text[i + 1] === '\n') i++;
+          } else { value += char; }
+        }
+      }
+      if (value || row.length > 0) { row.push(value.trim()); result.push(row); }
+      return result;
+    }
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const rawData = event.target.result;
+        const parsedRows = parseCSV(rawData);
+        const partsArray = [];
+        let idCounter = 1;
+
+        for (let i = 0; i < parsedRows.length; i++) {
+          const row = parsedRows[i];
+          if (row.length < 6) continue;
+
+          const partCode = row[1] || "";
+          const partName = row[2] || "";
+          const modelName = row[4] || "";
+
+          // Enforce data integrity: skip empty spacer rows and redundant headers
+          if (partCode === "Part Code" || (!partCode && !partName)) continue;
+
+          const rawPrice = row[5] ? row[5].replace(/,/g, '').replace(/"/g, '') : "0";
+          let price = parseFloat(rawPrice);
+          if (isNaN(price)) price = 0;
+
+          partsArray.push({
+            id: idCounter++,
+            name: partName,
+            code: partCode,
+            category: inferCategory(partName),
+            model: modelName,
+            price: price,
+            stock: 0,
+            featured: "false",
+            description: ""
+          });
+        }
+
+        const outputString = `export const parts = ${JSON.stringify(partsArray, null, 2)};\n`;
+        const blob = new Blob([outputString], {type: 'text/javascript'});
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'parts.js';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        document.getElementById('status').innerText = `[SUCCESS] Extracted ${partsArray.length} items. parts.js safely downloaded.`;
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
